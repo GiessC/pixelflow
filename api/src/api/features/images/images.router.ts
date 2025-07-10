@@ -1,7 +1,6 @@
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Request, Response, Router } from 'express';
 import { z } from 'zod';
+import { S3Service } from '../../../aws/features/s3/s3.service';
 
 const router = Router();
 
@@ -17,15 +16,8 @@ router.post('/', async (request: Request, response: Response) => {
       .json({ error: 'Invalid request body.', issues: error?.issues });
   }
   const { fileName } = data;
-  const client = new S3Client();
-  const command = new PutObjectCommand({
-    Bucket: process.env.S3_BUCKET_NAME,
-    Key: fileName,
-  });
-  const ONE_HOUR_SECONDS = 60 * 60;
-  const uploadUrl = await getSignedUrl(client, command, {
-    expiresIn: ONE_HOUR_SECONDS,
-  });
+  const s3Service = new S3Service();
+  const uploadUrl = await s3Service.getUploadUrl({ fileName });
   return response.json({ uploadUrl });
 });
 
