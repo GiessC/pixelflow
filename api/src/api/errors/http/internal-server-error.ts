@@ -1,10 +1,10 @@
-import { BaseError } from '../base-error';
+import { HttpError } from './http-error';
 
-export class InternalServerError extends BaseError {
-  public readonly statusCode: number = 500;
-
+export class InternalServerError extends HttpError {
   constructor(message: string) {
-    super(message);
+    super(message, 500);
     this.name = 'InternalServerError';
+    this.userFriendlyMessage =
+      'An unexpected error occurred. Please try again later.';
   }
 }

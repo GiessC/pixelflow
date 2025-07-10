@@ -13,7 +13,7 @@ export class BaseError extends Error {
     return this._name;
   }
 
-  set name(newName: string) {
+  protected set name(newName: string) {
     this._name = newName;
   }
 
@@ -21,7 +21,7 @@ export class BaseError extends Error {
     return this._message;
   }
 
-  set message(newMessage: string) {
+  protected set message(newMessage: string) {
     this._message = newMessage;
   }
 }
