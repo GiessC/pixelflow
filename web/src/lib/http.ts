@@ -121,3 +121,7 @@ function overrideHeaders(
 }
 
 export const http: IHttp = new Http();
+
+export function useHttp(): IHttp {
+  return http;
+}
