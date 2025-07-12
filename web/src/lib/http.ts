@@ -46,7 +46,7 @@ class Http implements IHttp {
     const response = await fetch(url, {
       method: 'POST',
       headers: overrideHeaders(headers),
-      body: data ? JSON.stringify(data) : undefined,
+      body: getBody(data),
     });
     if (isFailure(response)) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -62,7 +62,7 @@ class Http implements IHttp {
     const response = await fetch(url, {
       method: 'PUT',
       headers: overrideHeaders(headers),
-      body: data ? JSON.stringify(data) : undefined,
+      body: getBody(data),
     });
     if (isFailure(response)) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -78,7 +78,7 @@ class Http implements IHttp {
     const response = await fetch(url, {
       method: 'PATCH',
       headers: overrideHeaders(headers),
-      body: data ? JSON.stringify(data) : undefined,
+      body: getBody(data),
     });
     if (isFailure(response)) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -99,6 +99,17 @@ class Http implements IHttp {
     }
     return await response.json();
   }
+}
+
+function getBody<TData>(data?: TData) {
+  if (
+    data instanceof File ||
+    data instanceof Blob ||
+    data instanceof FormData
+  ) {
+    return data;
+  }
+  return data ? JSON.stringify(data) : undefined;
 }
 
 function isFailure(response: Response): boolean {

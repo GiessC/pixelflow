@@ -33,9 +33,9 @@ export function useImageUpload() {
       uploadUrl: string;
       file: File;
     }) => {
-      const formData = new FormData();
-      formData.append('file', file);
-      return await put<void, FormData>(uploadUrl, formData);
+      return await put<void, File>(uploadUrl, file, {
+        'Content-Type': file.type,
+      });
     },
   });
 }
