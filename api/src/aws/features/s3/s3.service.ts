@@ -11,8 +11,10 @@ export class S3Service {
 
   public async getUploadUrl({
     fileName,
+    userId,
   }: {
     fileName: string;
+    userId: string;
   }): Promise<string> {
     const bucketName = process.env.S3_BUCKET_NAME;
     if (!bucketName) {
@@ -23,7 +25,7 @@ export class S3Service {
 
     const command = new PutObjectCommand({
       Bucket: bucketName,
-      Key: fileName,
+      Key: `${userId}/${fileName}`,
     });
     const ONE_HOUR_SECONDS = 60 * 60;
     return await getSignedUrl(this.s3Client, command, {
