@@ -7,11 +7,17 @@
 // import { useState } from 'react';
 // import { Badge } from './badge';
 
-import { useState, type KeyboardEvent } from 'react';
+import {
+  useImperativeHandle,
+  useState,
+  type KeyboardEvent,
+  type Ref,
+} from 'react';
 import { Input } from './input';
 import { Badge } from './badge';
 import { X } from 'lucide-react';
 import { Button } from './button';
+import { cn } from '@/lib/utils';
 
 // type TagsInputProps<
 //   TFormValues extends FieldValues = FieldValues,
@@ -53,13 +59,21 @@ interface TagsInputProps {
   value: string[];
   onChange: (updatedTags: string[]) => void;
   placeholder?: string;
+  apiRef?: Ref<TagsApi> | null;
+}
+
+export interface TagsApi {
+  prepend: (tag: string) => void;
+  remove: (tag: string) => void;
 }
 
 export function TagsInput({
   value: tags,
   onChange,
   placeholder,
+  apiRef = null,
 }: TagsInputProps) {
+  useTagsApi({ value: tags, onChange, apiRef });
   const [inputValue, setInputValue] = useState('');
 
   function handleKeyDown(event: KeyboardEvent) {
@@ -84,22 +98,30 @@ export function TagsInput({
   return (
     <div className='flex flex-col border border-input rounded-md focus-within:ring-2 focus-within:ring-primary'>
       <div className='flex flex-wrap space-x-1 min-h-0'>
-        {tags.map((tag, index) => (
-          <Badge
-            key={index}
-            variant='secondary'
-            className='flex space-x-1 m-1'
-          >
-            {tag}
-            <Button
-              variant='ghost'
-              className='cursor-pointer !p-0 w-auto h-auto'
-              onClick={() => removeTag(index)}
+        {tags.map((tag, index) => {
+          const isNsfw = tag === 'nsfw';
+          return (
+            <Badge
+              key={index}
+              variant='secondary'
+              className={cn(
+                'flex space-x-1 m-1',
+                isNsfw && 'text-stone-500 opacity-60'
+              )}
             >
-              <X />
-            </Button>
-          </Badge>
-        ))}
+              {tag}
+              {!isNsfw && (
+                <Button
+                  variant='ghost'
+                  className='cursor-pointer !p-0 w-auto h-auto'
+                  onClick={() => removeTag(index)}
+                >
+                  <X />
+                </Button>
+              )}
+            </Badge>
+          );
+        })}
       </div>
       <Input
         className='flex-1 !ring-0 border-none'
@@ -110,4 +132,22 @@ export function TagsInput({
       />
     </div>
   );
+}
+
+function useTagsApi({
+  apiRef = null,
+  value,
+  onChange,
+}: TagsInputProps & { apiRef: React.Ref<TagsApi> | null }) {
+  useImperativeHandle(apiRef, () => ({
+    // add: (tag: string) => {
+    //   onChange([...(value ?? []), tag]);
+    // },
+    prepend: (tag: string) => {
+      onChange([tag, ...(value ?? [])]);
+    },
+    remove: (tag: string) => {
+      onChange(value.filter((tagValue) => tagValue !== tag) ?? []);
+    },
+  }));
 }

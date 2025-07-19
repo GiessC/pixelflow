@@ -11,8 +11,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { useImageUpload, useImageUploadUrl } from '../api/upload-image.api';
 import z from 'zod';
-import { TagsInput } from '@/components/ui/tags-input';
+import { type TagsApi, TagsInput } from '@/components/ui/tags-input';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useRef } from 'react';
 
 const formSchema = z.object({
   image: z.instanceof(File).refine((file) => file.type.startsWith('image/'), {
@@ -29,6 +30,7 @@ const formSchema = z.object({
 export function UploadImageForm() {
   const { mutateAsync: requestUploadUrlAsync } = useImageUploadUrl();
   const { mutateAsync: uploadImageAsync } = useImageUpload();
+  const tagsApi = useRef<TagsApi>(null);
 
   return (
     <Form
@@ -90,7 +92,10 @@ export function UploadImageForm() {
               <FormItem>
                 <FormLabel>Tags</FormLabel>
                 <FormControl>
-                  <TagsInput {...field} />
+                  <TagsInput
+                    apiRef={tagsApi}
+                    {...field}
+                  />
                 </FormControl>
                 <FormDescription />
                 <FormMessage />
@@ -103,7 +108,18 @@ export function UploadImageForm() {
             render={({ field }) => (
               <FormItem className='flex flex-row items-center gap-2'>
                 <FormControl>
-                  <Checkbox {...field} />
+                  <Checkbox
+                    {...field}
+                    checked={field.value}
+                    onCheckedChange={(isChecked) => {
+                      field.onChange(isChecked);
+                      if (isChecked) {
+                        tagsApi.current?.prepend('nsfw');
+                      } else {
+                        tagsApi.current?.remove('nsfw');
+                      }
+                    }}
+                  />
                 </FormControl>
                 <FormLabel>NSFW?</FormLabel>
                 <FormDescription />
