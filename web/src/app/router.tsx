@@ -10,17 +10,17 @@ export const router = createBrowserRouter([
     children: [
       { index: true, Component: App },
       {
-        path: 'images',
+        path: 'gallery',
         children: [
+          {
+            index: true,
+            Component: GalleryPage,
+          },
           {
             path: 'upload',
             Component: UploadImagePage,
           },
         ],
-      },
-      {
-        path: 'gallery',
-        Component: GalleryPage,
       },
     ],
   },
