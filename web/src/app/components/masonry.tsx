@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
-import { cloneElement, useMemo, type ReactElement } from 'react';
+import { cloneElement, useCallback, useMemo, type ReactElement } from 'react';
+import { useBreakpoint, type Breakpoint } from '../hooks/use-breakpoint';
 
 export function Masonry({
   children,
@@ -14,18 +15,56 @@ export function Masonry({
         md?: number;
         lg?: number;
         xl?: number;
+        '2xl'?: number;
       };
   children: ReactElement<{ className?: string }>[];
   className?: string;
 }) {
+  const allColumns = useMemo(() => {
+    if (typeof columns === 'number') {
+      return {
+        default: columns,
+        sm: columns,
+        md: columns,
+        lg: columns,
+        xl: columns,
+        '2xl': columns,
+      };
+    }
+    return {
+      default: columns.default,
+      sm: columns.sm ?? columns.default,
+      md: columns.md ?? columns.sm ?? columns.default,
+      lg: columns.lg ?? columns.md ?? columns.sm ?? columns.default,
+      xl:
+        columns.xl ?? columns.lg ?? columns.md ?? columns.sm ?? columns.default,
+      '2xl':
+        columns['2xl'] ??
+        columns.xl ??
+        columns.lg ??
+        columns.md ??
+        columns.sm ??
+        columns.default,
+    };
+  }, [columns]);
+  const { breakpoint } = useBreakpoint();
+
+  const columnsFromBreakpoint = useCallback(
+    (breakpoint: Breakpoint): number => {
+      return allColumns[breakpoint];
+    },
+    [allColumns]
+  );
+
   const childGrid = useMemo(() => {
     if (!children || children.length === 0) return [];
+    const numberOfColumns = columnsFromBreakpoint(breakpoint);
     const columns: ReactElement<{ className?: string }>[][] = [[], [], [], []];
     for (let i = 0; i < children.length; i++) {
-      columns[i % 4].push(children[i]);
+      columns[i % numberOfColumns].push(children[i]);
     }
     return columns;
-  }, [children]);
+  }, [breakpoint, children, columnsFromBreakpoint]);
 
   function columnStyles(): string {
     if (typeof columns === 'number') {
