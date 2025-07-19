@@ -3,8 +3,8 @@ import { z } from 'zod';
 import { S3Service } from '../../../aws/features/s3/s3.service';
 import { Image, imageSchema } from './types/image.type';
 import { DynamoDB } from '@aws-sdk/client-dynamodb';
-import { marshall } from '@aws-sdk/util-dynamodb';
-import { imageDynamoDBDtoSchema } from './types/image.dynamodb.dto';
+import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
+import { getImagePk, imageDynamoDBDtoSchema } from './types/image.dynamodb.dto';
 import { transaction } from '../../utils/transaction';
 
 const router = Router();
@@ -75,6 +75,27 @@ router.post('/', async (request: Request, response: Response) => {
       });
     },
   });
+});
+
+router.get('/', async (_: Request, response: Response) => {
+  const dynamoDB = new DynamoDB();
+  try {
+    const result = await dynamoDB.query({
+      TableName: process.env.IMAGE_TABLE_NAME,
+      KeyConditionExpression: '#pk = :pk',
+      ExpressionAttributeNames: {
+        '#pk': 'pk',
+      },
+      ExpressionAttributeValues: {
+        ':pk': { S: getImagePk() },
+      },
+    });
+    const images = result.Items?.map((item) => unmarshall(item));
+    response.status(200).json(images);
+  } catch (error) {
+    console.error('Error fetching images:', error);
+    response.status(500).json({ error: 'Failed to fetch images.' });
+  }
 });
 
 export default router;
