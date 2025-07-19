@@ -77,7 +77,33 @@ router.post('/', async (request: Request, response: Response) => {
   });
 });
 
-router.get('/', async (_: Request, response: Response) => {
+const getImageRequestSchema = z.object({
+  limit: z
+    .string()
+    .optional()
+    .refine(
+      (value) => {
+        if (value) {
+          const num = parseInt(value);
+          return !isNaN(num) && num > 0 && num <= 100;
+        }
+        return true;
+      },
+      {
+        message: 'Limit must be a number between 1 and 100.',
+      },
+    )
+    .transform((value) => {
+      return value ? parseInt(value) : undefined;
+    }),
+  cursor: z.string().base64().optional(),
+});
+
+router.get('/', async (rawRequest: Request, response: Response) => {
+  const request = getImageRequestSchema.parse({
+    limit: rawRequest.query.limit,
+    cursor: rawRequest.query.cursor,
+  });
   const dynamoDB = new DynamoDB();
   try {
     const result = await dynamoDB.query({
@@ -89,9 +115,20 @@ router.get('/', async (_: Request, response: Response) => {
       ExpressionAttributeValues: {
         ':pk': { S: getImagePk() },
       },
+      Limit: request.limit,
+      ExclusiveStartKey: request.cursor
+        ? JSON.parse(Buffer.from(request.cursor, 'base64').toString())
+        : undefined,
     });
     const images = result.Items?.map((item) => unmarshall(item));
-    response.status(200).json(images);
+    response.status(200).json({
+      images,
+      cursor: result.LastEvaluatedKey
+        ? Buffer.from(JSON.stringify(result.LastEvaluatedKey)).toString(
+            'base64',
+          )
+        : undefined,
+    });
   } catch (error) {
     console.error('Error fetching images:', error);
     response.status(500).json({ error: 'Failed to fetch images.' });
