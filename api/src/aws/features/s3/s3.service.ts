@@ -14,7 +14,7 @@ export class S3Service {
     userId,
   }: {
     fileName: string;
-    userId: string;
+    userId: string | undefined;
   }): Promise<string> {
     const bucketName = process.env.S3_BUCKET_NAME;
     if (!bucketName) {

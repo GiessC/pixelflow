@@ -17,7 +17,7 @@ const uploadUrlSchema = z.object({
       .string()
       .min(3, { message: 'Sorry, a tag must be 3 characters or more.' }),
   ),
-  userId: z.string().uuid(), // TODO: replace with auth
+  userId: z.string().uuid().optional(), // TODO: replace with auth
 });
 
 router.post('/', async (request: Request, response: Response) => {
@@ -40,7 +40,7 @@ router.post('/', async (request: Request, response: Response) => {
       },
       async function writeImageToDynamoDB(): Promise<Image> {
         const image = imageSchema.parse({
-          fileName: uploadRequest.fileName,
+          fileName: `${userId}/${uploadRequest.fileName}`,
           nsfw: uploadRequest.nsfw,
           tags: uploadRequest.tags,
         });

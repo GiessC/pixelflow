@@ -1,5 +1,17 @@
 import { z } from 'zod';
-import { imageSchema } from './image.type';
+import { Image, imageSchema } from './image.type';
+
+export function getImagePk(): string {
+  return 'IMG';
+}
+
+export function getImageSk(
+  creatorId: Image['createdBy'],
+  status: Image['status'],
+  fileName: Image['fileName'],
+): string {
+  return `USR#${creatorId}#${status}#FILE#${fileName}`;
+}
 
 export const imageDynamoDBDtoSchema = imageSchema
   .extend({
@@ -11,8 +23,8 @@ export const imageDynamoDBDtoSchema = imageSchema
   .transform((image) => {
     return {
       ...image,
-      pk: 'IMG',
-      sk: `USR#${image.createdBy}#${image.status}#FILE#${image.fileName}`,
+      pk: getImagePk(),
+      sk: getImageSk(image.createdBy, image.status, image.fileName),
     };
   });
 
