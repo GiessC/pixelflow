@@ -11,24 +11,43 @@ import {
 import { Input } from '@/components/ui/input';
 import { useImageUpload, useImageUploadUrl } from '../api/upload-image.api';
 import z from 'zod';
+import { type TagsApi, TagsInput } from '@/components/ui/tags-input';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useRef } from 'react';
 
 const formSchema = z.object({
   image: z.instanceof(File).refine((file) => file.type.startsWith('image/'), {
     message: 'Please upload a valid image file.',
   }),
+  nsfw: z.boolean().default(false),
+  tags: z
+    .array(
+      z.string().min(3, { message: 'Tags must be at least 3 characters long.' })
+    )
+    .default([]),
 });
 
 export function UploadImageForm() {
   const { mutateAsync: requestUploadUrlAsync } = useImageUploadUrl();
   const { mutateAsync: uploadImageAsync } = useImageUpload();
+  const tagsApi = useRef<TagsApi>(null);
 
   return (
     <Form
       schema={formSchema}
-      onSubmit={async ({ image }) => {
-        const { uploadUrl } = await requestUploadUrlAsync({
-          fileName: image.name,
-        });
+      defaultValues={{
+        nsfw: false,
+        tags: [],
+      }}
+      onSubmit={async ({ image, nsfw, tags }) => {
+        const { uploadUrl, image: uploadedImage } = await requestUploadUrlAsync(
+          {
+            fileName: image.name,
+            nsfw,
+            tags,
+          }
+        );
+        console.log('image', uploadedImage);
         await uploadImageAsync({
           uploadUrl,
           file: image,
@@ -36,7 +55,7 @@ export function UploadImageForm() {
       }}
     >
       {(form) => (
-        <>
+        <div className='flex flex-col gap-4'>
           <FormField
             name='image'
             control={form.control as never}
@@ -66,13 +85,55 @@ export function UploadImageForm() {
               </FormItem>
             )}
           />
+          <FormField
+            name='tags'
+            control={form.control as never}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Tags</FormLabel>
+                <FormControl>
+                  <TagsInput
+                    apiRef={tagsApi}
+                    {...field}
+                  />
+                </FormControl>
+                <FormDescription />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            name='nsfw'
+            control={form.control as never}
+            render={({ field }) => (
+              <FormItem className='flex flex-row items-center gap-2'>
+                <FormControl>
+                  <Checkbox
+                    {...field}
+                    checked={field.value}
+                    onCheckedChange={(isChecked) => {
+                      field.onChange(isChecked);
+                      if (isChecked) {
+                        tagsApi.current?.prepend('nsfw');
+                      } else {
+                        tagsApi.current?.remove('nsfw');
+                      }
+                    }}
+                  />
+                </FormControl>
+                <FormLabel>NSFW?</FormLabel>
+                <FormDescription />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
           <Button
             type='submit'
             disabled={!form.formState.isValid || form.formState.isSubmitting}
           >
             Upload Image
           </Button>
-        </>
+        </div>
       )}
     </Form>
   );
