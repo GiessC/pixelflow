@@ -14,7 +14,7 @@ function getCreatorOf(s3EventRecord: S3EventRecord): string | undefined {
 export async function handler(event: S3Event): Promise<void> {
   console.log('Processing S3 event:', JSON.stringify(event, null, 2));
   const dynamoDb = new DynamoDB();
-  const images: ImageDynamoDBDto[] = [];
+  const writeRequests: WriteRequest[] = [];
   for (const s3EventRecord of event.Records) {
     try {
       const itemResponse = await dynamoDb.getItem({
@@ -38,35 +38,27 @@ export async function handler(event: S3Event): Promise<void> {
         itemResponse.Item,
       ) as ImageDynamoDBDto;
       console.log('Image found:', image);
-      images.push(image);
+      writeRequests.push({
+        DeleteRequest: {
+          Key: {
+            pk: { S: image.pk },
+            sk: { S: image.sk },
+          },
+        },
+      });
+      image.status = 'success';
+      image.sk = getImageSk(image.createdBy, image.status, image.fileName);
+      image.url = `https://${s3EventRecord.s3.bucket.name}.s3.amazonaws.com/${s3EventRecord.s3.object.key}`;
+      writeRequests.push({
+        PutRequest: {
+          Item: marshall(image, {
+            removeUndefinedValues: true,
+          }),
+        },
+      });
     } catch (error) {
       console.error('Error updating item in DynamoDB:', error);
     }
-  }
-  // Batch write to DynamoDB
-  if (!images.length) {
-    console.log('No images to update.');
-    return;
-  }
-  const writeRequests: WriteRequest[] = [];
-  for (const image of images) {
-    writeRequests.push({
-      DeleteRequest: {
-        Key: {
-          pk: { S: image.pk },
-          sk: { S: image.sk },
-        },
-      },
-    });
-    image.status = 'success';
-    image.sk = getImageSk(image.createdBy, image.status, image.fileName);
-    writeRequests.push({
-      PutRequest: {
-        Item: marshall(image, {
-          removeUndefinedValues: true,
-        }),
-      },
-    });
   }
   try {
     const { UnprocessedItems } = await dynamoDb.batchWriteItem({
@@ -78,7 +70,7 @@ export async function handler(event: S3Event): Promise<void> {
       console.error('Some images were not processed:', UnprocessedItems);
       return;
     }
-    console.log(`Successfully updated ${images.length} images.`);
+    console.log(`Successfully updated ${writeRequests.length} images.`);
   } catch (error) {
     console.error('Error writing images to DynamoDB:', error);
   }
