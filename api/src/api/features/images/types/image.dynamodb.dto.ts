@@ -17,8 +17,6 @@ export const imageDynamoDBDtoSchema = imageSchema
   .extend({
     pk: z.string().optional(),
     sk: z.string().optional(),
-    gsi1pk: z.string().optional(),
-    gsi1sk: z.string().optional(),
   })
   .transform((image) => {
     return {

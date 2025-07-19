@@ -1,4 +1,4 @@
-environment = "production"
+environment = "prod"
 allowed_origins = [ ]
 allowed_principals = [ "value" ]
 aws_profile = "pfprod"
