@@ -179,3 +179,17 @@ resource "aws_s3_bucket_notification" "pixelflow_upload_image_notification" {
   depends_on = [aws_lambda_permission.pixelflow_upload_image_permission]
 
 }
+
+resource "aws_cognito_user_pool" "pixelflow_user_pool" {
+  name = "pixelflow-${var.environment}-user-pool"
+}
+
+resource "aws_cognito_user_pool_client" "pixelflow_user_pool_client" {
+  name         = "pixelflow-${var.environment}-user-pool-client"
+  user_pool_id = aws_cognito_user_pool.pixelflow_user_pool.id
+
+  explicit_auth_flows = [
+    "ALLOW_USER_SRP_AUTH",
+    "ALLOW_REFRESH_TOKEN_AUTH",
+  ]
+}
