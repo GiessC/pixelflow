@@ -1,7 +1,7 @@
 import { createContext, useContext } from 'react';
 import type { AuthUser } from '../types/auth-user.type';
 
-interface AuthContext {
+export interface AuthContextValue {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -14,7 +14,20 @@ interface AuthContext {
   ) => Promise<AuthUser>;
 }
 
-export const AuthContext = createContext<AuthContext | undefined>(undefined);
+export const AuthContext = createContext<AuthContextValue | undefined>({
+  user: null,
+  isAuthenticated: false,
+  isLoading: true,
+  login: async () => {
+    throw new Error('login function not implemented');
+  },
+  logout: async () => {
+    throw new Error('logout function not implemented');
+  },
+  register: async () => {
+    throw new Error('register function not implemented');
+  },
+});
 
 export function useAuth() {
   const context = useContext(AuthContext);
