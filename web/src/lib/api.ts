@@ -1,3 +1,4 @@
+import { removeUndefinedValues } from '@/app/utils/remove-undefined-values';
 import { http } from './http';
 
 interface Api {
@@ -30,7 +31,11 @@ export function useApi(): Api {
     data?: TData,
     headers?: Record<string, string>
   ): Promise<TResponse> {
-    return http.get<TResponse, TData>(apiUrl(endpoint), data, headers);
+    return http.get<TResponse, TData>(
+      apiUrl(endpoint),
+      removeUndefinedValues<TData | undefined>(data),
+      headers
+    );
   }
 
   async function post<TResponse, TData = undefined>(
