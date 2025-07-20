@@ -123,7 +123,8 @@ router.get('/', async (rawRequest: Request, response: Response) => {
     const images = result.Items?.map((item) => unmarshall(item));
     response.status(200).json({
       images,
-      cursor: result.LastEvaluatedKey
+      prev: request.cursor,
+      next: result.LastEvaluatedKey
         ? Buffer.from(JSON.stringify(result.LastEvaluatedKey)).toString(
             'base64',
           )
