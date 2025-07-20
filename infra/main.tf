@@ -182,6 +182,15 @@ resource "aws_s3_bucket_notification" "pixelflow_upload_image_notification" {
 
 resource "aws_cognito_user_pool" "pixelflow_user_pool" {
   name = "pixelflow-${var.environment}-user-pool"
+  auto_verified_attributes = ["email"]
+
+  email_configuration {
+    email_sending_account = "COGNITO_DEFAULT"
+  }
+
+  verification_message_template {
+    default_email_option = "CONFIRM_WITH_LINK"
+  }
 }
 
 resource "aws_cognito_user_pool_client" "pixelflow_user_pool_client" {
@@ -192,4 +201,9 @@ resource "aws_cognito_user_pool_client" "pixelflow_user_pool_client" {
     "ALLOW_USER_SRP_AUTH",
     "ALLOW_REFRESH_TOKEN_AUTH",
   ]
+}
+
+resource "aws_cognito_user_pool_domain" "pixelflow_user_pool_domain" {
+  domain       = "pixelflow-${var.environment}-user-pool-domain"
+  user_pool_id = aws_cognito_user_pool.pixelflow_user_pool.id
 }
