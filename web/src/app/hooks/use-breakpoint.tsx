@@ -26,9 +26,10 @@ export function useBreakpoint() {
   }
 
   useEffect(() => {
-    const handler = () => setBreakpoint(getBreakpointName(window.innerWidth));
-    window.addEventListener('resize', handler);
-    return () => void window.removeEventListener('resize', handler);
+    const updateBreakpoint = () =>
+      setBreakpoint(getBreakpointName(window.innerWidth));
+    window.addEventListener('resize', updateBreakpoint);
+    return () => void window.removeEventListener('resize', updateBreakpoint);
   }, []);
 
   return {
