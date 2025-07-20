@@ -2,6 +2,7 @@ import { Form } from '@/app/components/form';
 import { Button } from '@/components/ui/button';
 import {
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -9,6 +10,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { z } from 'zod';
+import { useAuth } from '../context/auth.context';
 
 const registerSchema = z
   .object({
@@ -20,7 +22,11 @@ const registerSchema = z
     password: z
       .string({ required_error: 'Password is required.' })
       .min(1, 'Password is required.')
-      .min(8, 'Password must be at least 8 characters long.'),
+      .min(8, 'Password must be at least 8 characters long.')
+      .regex(/[a-z]/, 'Password must contain at least one lowercase letter.')
+      .regex(/[A-Z]/, 'Password must contain at least one uppercase letter.')
+      .regex(/[0-9]/, 'Password must contain at least one number.')
+      .regex(/[\W_]/, 'Password must contain at least one special character.'),
     confirmPassword: z
       .string({ required_error: 'Please confirm your password.' })
       .min(1, 'Please confirm your password.'),
@@ -31,8 +37,14 @@ const registerSchema = z
   });
 
 export function RegisterForm() {
-  function registerUser(data: z.output<typeof registerSchema>) {
-    console.log('Registering user:', data);
+  const { register } = useAuth();
+
+  async function registerUser(data: z.output<typeof registerSchema>) {
+    try {
+      await register(data.username, data.email, data.password);
+    } catch (error) {
+      console.error('Registration error:', error);
+    }
   }
 
   return (
@@ -90,10 +102,13 @@ export function RegisterForm() {
                   <Input
                     {...field}
                     type='password'
-                    placeholder='Must be at least 8 characters'
                     autoComplete='new-password'
                   />
                 </FormControl>
+                <FormDescription>
+                  Password must be at least 8 characters long, contain uppercase
+                  and lowercase letters, a number, and a special character.
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
