@@ -15,7 +15,7 @@ export function GalleryImage({
   const navigate = useNavigate();
 
   function goToImagePage() {
-    navigate(`/gallery/${image.fileName}`);
+    navigate(`/app/gallery/${image.fileName}`);
   }
 
   return (
