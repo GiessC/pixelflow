@@ -1,31 +1,36 @@
+import { VirtualizedMasonry } from '@/app/components/virtualized-masonry';
 import { useImages } from '../api/get-image.api';
-import { GalleryImage } from '@/app/features/images/components/gallery-image';
-import { type Image } from '@/app/features/images/types/image';
-import { Masonry } from '@/app/components/masonry';
+import { useMemo } from 'react';
+import { GalleryImage } from './gallery-image';
 
 export function ImageList() {
-  const { data: images, isLoading, error } = useImages();
+  const { data: imageData, isLoading, error } = useImages();
+
+  const allImages = useMemo(() => {
+    return imageData?.pages.flatMap((page) => page.images) ?? [];
+  }, [imageData]);
 
   if (isLoading) return <div>Loading...</div>;
   if (error) return <div>Error loading images</div>;
 
   return (
-    <Masonry
-      className='m-2'
-      columns={{
-        default: 1,
-        sm: 2,
-        md: 3,
-        lg: 4,
+    <VirtualizedMasonry
+      items={allImages}
+      numberOfColumns={{
+        default: 2,
+        sm: 3,
+        md: 4,
+        lg: 5,
+        xl: 6,
+        '2xl': 6,
       }}
-    >
-      {images?.map((image: Image) => (
+      renderItem={(image) => (
         <GalleryImage
-          key={image.fileName}
+          key={`${image.fileName}-${image.createdBy}`}
           image={image}
-          width='100%'
+          className='w-full'
         />
-      )) ?? []}
-    </Masonry>
+      )}
+    />
   );
 }
