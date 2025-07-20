@@ -1,5 +1,14 @@
 import { CognitoJwtVerifier } from 'aws-jwt-verify';
 import { NextFunction, Request, Response } from 'express';
+import { AsyncLocalStorage } from 'node:async_hooks';
+
+export const asyncLocalStorage = new AsyncLocalStorage<
+  | {
+      userId: string;
+      idToken: string;
+    }
+  | undefined
+>();
 
 export async function authentication(
   req: Request,
@@ -20,8 +29,11 @@ export async function authentication(
   });
 
   try {
-    await verifier.verify(idToken);
-    next();
+    const token = await verifier.verify(idToken);
+    const userId = token.sub;
+    asyncLocalStorage.run({ userId, idToken }, () => {
+      next();
+    });
   } catch (error) {
     console.error('JWT verification failed:', error);
     return res

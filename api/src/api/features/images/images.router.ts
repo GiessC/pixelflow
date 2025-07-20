@@ -7,6 +7,7 @@ import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
 import { getImagePk, imageDynamoDBDtoSchema } from './types/image.dynamodb.dto';
 import { transaction } from '../../utils/transaction';
 import { authentication } from '../../../middlewares';
+import { getUser } from '../../utils/get-user';
 
 const router = Router();
 
@@ -18,14 +19,12 @@ const uploadUrlSchema = z.object({
       .string()
       .min(3, { message: 'Sorry, a tag must be 3 characters or more.' }),
   ),
-  userId: z.string().uuid().optional(), // TODO: replace with auth
 });
 
 router.post(
   '/',
   authentication,
   async (request: Request, response: Response) => {
-    console.log('Received request to upload image:', request.body);
     const {
       data: uploadRequest,
       success,
@@ -36,18 +35,23 @@ router.post(
         .status(400)
         .json({ error: 'Invalid request body.', issues: error?.issues });
     }
-    const { fileName, userId } = uploadRequest;
+    const { fileName } = uploadRequest;
+    const user = getUser();
     await transaction({
       actions: [
         async function uploadFileToS3(): Promise<string> {
           const s3Service = new S3Service();
-          return await s3Service.getUploadUrl({ fileName, userId });
+          return await s3Service.getUploadUrl({
+            fileName,
+            userId: user?.userId,
+          });
         },
         async function writeImageToDynamoDB(): Promise<Image> {
           const image = imageSchema.parse({
-            fileName: `${userId}/${uploadRequest.fileName}`,
+            fileName: `${user?.userId}/${uploadRequest.fileName}`,
             nsfw: uploadRequest.nsfw,
             tags: uploadRequest.tags,
+            createdBy: user?.userId,
           });
           const dynamoDB = new DynamoDB();
           await dynamoDB.putItem({
