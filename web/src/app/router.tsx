@@ -1,5 +1,5 @@
 import { createBrowserRouter } from 'react-router';
-import { Layout } from './layout';
+import { BaseLayout } from './base-layout';
 import { App } from './pages/app';
 import { UploadImagePage } from './pages/images/upload/upload-image.page';
 import { GalleryPage } from './pages/gallery';
@@ -7,10 +7,11 @@ import { RegisterPage } from './pages/auth/register/register.page';
 import { LoginPage } from './pages/auth/login/login.page';
 import { RequireUnauthenticated } from './auth/components/require-unauthenticated';
 import { RequireAuthenticated } from './auth/components/require-authenticated';
+import { AppLayout } from './layout';
 
 export const router = createBrowserRouter([
   {
-    Component: Layout,
+    Component: BaseLayout,
     children: [
       { index: true, Component: App },
       {
@@ -32,15 +33,21 @@ export const router = createBrowserRouter([
         Component: RequireAuthenticated,
         children: [
           {
-            path: 'gallery',
+            path: '',
+            Component: AppLayout,
             children: [
               {
-                index: true,
-                Component: GalleryPage,
-              },
-              {
-                path: 'upload',
-                Component: UploadImagePage,
+                path: 'gallery',
+                children: [
+                  {
+                    index: true,
+                    Component: GalleryPage,
+                  },
+                  {
+                    path: 'upload',
+                    Component: UploadImagePage,
+                  },
+                ],
               },
             ],
           },
