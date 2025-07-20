@@ -4,6 +4,7 @@ import {
   FormControl,
   FormField,
   FormItem,
+  FormLabel,
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -52,10 +53,10 @@ export function RegisterForm() {
             control={control}
             render={({ field }) => (
               <FormItem>
+                <FormLabel>Username</FormLabel>
                 <FormControl>
                   <Input
                     {...field}
-                    placeholder='Username'
                     autoComplete='username'
                   />
                 </FormControl>
@@ -68,10 +69,10 @@ export function RegisterForm() {
             control={control}
             render={({ field }) => (
               <FormItem>
+                <FormLabel>Email</FormLabel>
                 <FormControl>
                   <Input
                     {...field}
-                    placeholder='Email'
                     autoComplete='email'
                   />
                 </FormControl>
@@ -84,11 +85,12 @@ export function RegisterForm() {
             control={control}
             render={({ field }) => (
               <FormItem>
+                <FormLabel>Password</FormLabel>
                 <FormControl>
                   <Input
                     {...field}
                     type='password'
-                    placeholder='Password'
+                    placeholder='Must be at least 8 characters'
                     autoComplete='new-password'
                   />
                 </FormControl>
@@ -101,11 +103,11 @@ export function RegisterForm() {
             control={control}
             render={({ field }) => (
               <FormItem>
+                <FormLabel>Confirm Password</FormLabel>
                 <FormControl>
                   <Input
                     {...field}
                     type='password'
-                    placeholder='Confirm Password'
                     autoComplete='new-password'
                   />
                 </FormControl>
