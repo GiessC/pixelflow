@@ -207,3 +207,149 @@ resource "aws_cognito_user_pool_domain" "pixelflow_user_pool_domain" {
   domain       = "pixelflow-${var.environment}-user-pool-domain"
   user_pool_id = aws_cognito_user_pool.pixelflow_user_pool.id
 }
+
+resource "aws_api_gateway_rest_api" "pixelflow_api" {
+  name        = "pixelflow-${var.environment}-api"
+  description = "Pixelflow API"
+}
+
+resource "aws_iam_role_policy" "pixelflow_api_policy" {
+  name = "pixelflow-${var.environment}-api-policy"
+  role = aws_iam_role.pixelflow_api_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "dynamodb:PutItem",
+          "dynamodb:Query",
+        ]
+        Resource = aws_dynamodb_table.pixelflow_main.arn
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:PutObject",
+        ]
+        Resource = [
+          aws_s3_bucket.pixelflow_images.arn,
+          "${aws_s3_bucket.pixelflow_images.arn}/*"
+        ]
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "pixelflow_api_role_policy_attachment" {
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+  role       = aws_iam_role.pixelflow_api_role.id
+}
+
+data "aws_iam_policy_document" "pixelflow_api_assume_role_policy" {
+  statement {
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["lambda.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "pixelflow_api_role" {
+  name = "pixelflow-${var.environment}-api-role"
+
+  assume_role_policy = data.aws_iam_policy_document.pixelflow_api_assume_role_policy.json
+}
+
+data "archive_file" "pixelflow_api_lambda_zip" {
+  depends_on = [null_resource.api_build]
+
+  type        = "zip"
+  source_file = "${path.module}/../api/dist/api-lambda.js"
+  output_path = "${path.module}/../api/dist/api-lambda.zip"
+}
+
+resource "aws_lambda_function" "pixelflow_api" {
+  function_name = "pixelflow-${var.environment}-api"
+  filename      = data.archive_file.pixelflow_api_lambda_zip.output_path
+  source_code_hash = data.archive_file.pixelflow_api_lambda_zip.output_base64sha256
+  runtime      = "nodejs22.x"
+  role         = aws_iam_role.pixelflow_api_role.arn
+  timeout      = 30
+  memory_size  = 128
+  handler      = "api-lambda.handler"
+
+  environment {
+    variables = {
+      S3_BUCKET_NAME     = aws_s3_bucket.pixelflow_images.bucket
+      IMAGE_TABLE_NAME   = aws_dynamodb_table.pixelflow_main.name
+    }
+  }
+}
+
+resource "aws_api_gateway_deployment" "pixelflow_api_deployment" {
+  depends_on = [
+    data.archive_file.pixelflow_api_lambda_zip,
+    aws_api_gateway_rest_api.pixelflow_api,
+    aws_lambda_function.pixelflow_api,
+  ]
+
+  triggers = {
+    redeployment = sha1(jsonencode(aws_api_gateway_rest_api.pixelflow_api.body))
+  }
+
+  rest_api_id = aws_api_gateway_rest_api.pixelflow_api.id
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "aws_api_gateway_stage" "pixelflow_api_stage" {
+  rest_api_id = aws_api_gateway_rest_api.pixelflow_api.id
+  deployment_id = aws_api_gateway_deployment.pixelflow_api_deployment.id
+  stage_name  = var.environment
+}
+
+resource "aws_api_gateway_resource" "pixelflow_api_resource" {
+  rest_api_id = aws_api_gateway_rest_api.pixelflow_api.id
+  parent_id   = aws_api_gateway_rest_api.pixelflow_api.root_resource_id
+  path_part   = "{proxy+}"
+}
+
+resource "aws_api_gateway_method" "pixelflow_api_method" {
+  rest_api_id   = aws_api_gateway_rest_api.pixelflow_api.id
+  resource_id   = aws_api_gateway_resource.pixelflow_api_resource.id
+  http_method   = "ANY"
+  authorization = "NONE"
+
+  request_parameters = {
+    "method.request.path.proxy" = true
+  }
+}
+
+resource "aws_api_gateway_integration" "pixelflow_api_integration" {
+  rest_api_id = aws_api_gateway_rest_api.pixelflow_api.id
+  resource_id = aws_api_gateway_resource.pixelflow_api_resource.id
+  http_method = aws_api_gateway_method.pixelflow_api_method.http_method
+
+  type                     = "AWS_PROXY"
+  integration_http_method  = "POST"
+  uri                      = aws_lambda_function.pixelflow_api.invoke_arn
+  passthrough_behavior     = "WHEN_NO_MATCH"
+
+  request_parameters = {
+    "integration.request.path.proxy" = "method.request.path.proxy"
+  }
+}
+
+resource "aws_lambda_permission" "pixelflow_api_permission" {
+  statement_id  = "AllowExecutionFromAPIGateway"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.pixelflow_api.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn = "${aws_api_gateway_rest_api.pixelflow_api.execution_arn}/*/*"
+}
