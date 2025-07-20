@@ -13,12 +13,15 @@ const router = Router();
 
 const uploadUrlSchema = z.object({
   fileName: z.string(),
-  nsfw: z.boolean(),
-  tags: z.array(
-    z
-      .string()
-      .min(3, { message: 'Sorry, a tag must be 3 characters or more.' }),
-  ),
+  nsfw: z.boolean().default(false),
+  tags: z
+    .array(
+      z
+        .string()
+        .min(3, { message: 'Sorry, a tag must be 3 characters or more.' }),
+    )
+    .optional()
+    .default([]),
 });
 
 router.post(
