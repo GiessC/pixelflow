@@ -286,6 +286,8 @@ resource "aws_lambda_function" "pixelflow_api" {
     variables = {
       S3_BUCKET_NAME     = aws_s3_bucket.pixelflow_images.bucket
       IMAGE_TABLE_NAME   = aws_dynamodb_table.pixelflow_main.name
+      COGNITO_USER_POOL_ID = aws_cognito_user_pool.pixelflow_user_pool.id
+      COGNITO_APP_CLIENT_ID = aws_cognito_user_pool_client.pixelflow_user_pool_client.id
     }
   }
 }

@@ -19,7 +19,10 @@ interface IHttp {
     data?: TData,
     headers?: Record<string, string>
   ) => Promise<TResponse>;
-  delete: <TResponse>(url: string) => Promise<TResponse>;
+  delete: <TResponse>(
+    url: string,
+    headers?: Record<string, string>
+  ) => Promise<TResponse>;
 }
 
 class Http implements IHttp {
