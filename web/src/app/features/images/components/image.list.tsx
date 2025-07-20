@@ -16,6 +16,7 @@ export function ImageList() {
   return (
     <VirtualizedMasonry
       items={allImages}
+      overscan={75}
       numberOfColumns={{
         default: 2,
         sm: 3,
@@ -28,7 +29,7 @@ export function ImageList() {
         <GalleryImage
           key={`${image.fileName}-${image.createdBy}`}
           image={image}
-          className='w-full'
+          className='w-full mb-3'
         />
       )}
     />
