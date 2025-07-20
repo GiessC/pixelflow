@@ -97,6 +97,7 @@ export function CognitoAuthProvider({ children }: PropsWithChildren) {
       id: idTokenPayload.sub,
       email: idTokenPayload.email,
       username: idTokenPayload['cognito:username'],
+      token: idToken?.toString(),
     };
   }
 
