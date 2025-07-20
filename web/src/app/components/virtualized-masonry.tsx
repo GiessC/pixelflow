@@ -6,12 +6,14 @@ export interface VirtualizedMasonryProps<TItem> {
   items: TItem[];
   numberOfColumns: number | Record<Breakpoint, number>;
   renderItem: (item: TItem) => ReactNode;
+  overscan?: number;
 }
 
 export function VirtualizedMasonry<TItem>({
   items,
   numberOfColumns: numberOfColumnsProp,
   renderItem,
+  overscan = 25,
 }: VirtualizedMasonryProps<TItem>) {
   const parentRef = useRef<HTMLDivElement>(null);
   const { breakpoint } = useBreakpoint();
@@ -20,7 +22,7 @@ export function VirtualizedMasonry<TItem>({
     count: items.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 400,
-    overscan: 0,
+    overscan,
   });
   const numberOfColumns =
     typeof numberOfColumnsProp === 'number'
@@ -38,7 +40,7 @@ export function VirtualizedMasonry<TItem>({
     >
       <div className={'w-full h-full'}>
         <div
-          className={'grid gap-4'}
+          className={'grid gap-3'}
           style={{
             gridTemplateColumns: `repeat(${numberOfColumns}, minmax(0, 1fr))`,
           }}
